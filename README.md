@@ -1,9 +1,9 @@
 # Skyler Arnold's personal website
 
 # TODO:
-- [ ] Bootstrap the repo w/ tailwind & whatnot
-- [ ] Setup deployment
-- [ ] Setup domain
+- [x] Bootstrap the repo w/ tailwind & whatnot
+- [x] Setup deployment
+- [x] Setup domain
 - [ ] First pass customizing home page
 - [ ] Write one simple blogpost
 - [ ] Setup routing and whatnot for the blogpost
