@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@astrojs/mdx": "^4.0.3",
+    "@astrojs/rss": "^4.0.10",
     "@astrojs/sitemap": "^3.2.1",
     "@astrojs/tailwind": "^5.1.4",
     "@expressive-code/plugin-line-numbers": "^0.38.3",
