@@ -164,6 +164,7 @@
   },
   "active": "e309062cb6587cd6",
   "lastOpenFiles": [
+    "src/components/Banner.astro",
     "public/robots.txt",
     "dist/sitemap-index.xml",
     "dist/sitemap-0.xml",
@@ -174,7 +175,6 @@
     "dist/_astro/ec.bdd0b.css",
     "dist/_astro/ec.8zarh.js",
     "dist/_astro/_blogpostId_.B9zTDSKx.css",
-    "dist/_astro",
     "dist/favicon.svg"
   ]
 }
