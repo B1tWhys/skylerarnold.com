@@ -1,0 +1,47 @@
+---
+title: Hello world!
+description: Simple test blogpost
+date: 2024-12-31
+---
+import { Picture } from 'astro:assets'
+import testImage from './test_image_nyc.jpg'
+
+This is my first blogpost! What else is there to do but test out all the nifty features
+I've just spent the last few hours configuring.
+
+My favorite thing is how code blocks look, courtesy of [Expressive Code](https://expressive-code.com/):
+
+```python
+# breadth_first_search.py
+def bfs(nodes, start):
+  q = deque([start])
+  while q:
+    cur = q.popleft()
+    print(cur.value)
+    q.extend(cur.children.values())
+```
+
+> Here's a block quote
+
+And I think I should even be able to use some mdx to define a list easily:
+<ol class="list-decimal">
+{
+    ["foo", "bar", "baz"].map((x) => <li>{x}</li>)
+}
+</ol>
+
+Astro also has some pretty slick features for image handling. I handed it a `4368x2912` png image,
+and I think it's going to downsample it to the correct size, and setup the html with the reactive attributes
+so that the right version shows up:
+{/* <Picture src={testImage}
+      alt="A test image"
+      widths={[240, 540, 720, testImage.width]}
+      sizes={`(max-width: 360px) 240px, (max-width: 720px) 540px, (max-width: 1600px) 720px, ${testImage.width}`} /> */}
+
+
+# H1
+## H2
+### H3
+#### H4
+##### H5
+###### H6

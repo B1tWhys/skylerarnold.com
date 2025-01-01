@@ -7,6 +7,7 @@ import mdx from "@astrojs/mdx";
 
 import expressiveCode from "astro-expressive-code";
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
+import { targetBlank } from "./src/plugins/targetBlank";
 
 // https://astro.build/config
 export default defineConfig({
@@ -21,4 +22,12 @@ export default defineConfig({
     }),
     mdx(),
   ],
+  experimental: {
+    contentIntellisense: true,
+  },
+  markdown: {
+    rehypePlugins: [
+      [targetBlank, { ignorePattern: /.*localhost|skylerarnold\.com.*/ }],
+    ],
+  },
 });
