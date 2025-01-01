@@ -5,7 +5,7 @@
 - [x] Bootstrap the repo w/ tailwind & whatnot
 - [x] Setup deployment
 - [x] Setup domain
-- [ ] Build homepage
+- [x] Build homepage
 - [ ] Write one simple blogpost
 - [ ] Setup routing and whatnot for the blogpost
 
