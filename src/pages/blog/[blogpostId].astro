@@ -16,8 +16,13 @@ const { Content } = await render(post);
 
 <Layout>
   <div class="w-full flex align-middle items-center justify-center">
-    <article class="prose">
-      <h1 id="title">{post.data.title}</h1>
+    <article class="prose bg-slate-300 px-8 shadow-lg shadow-slate-500 pt-4">
+      <div>
+        <h1 id="title" class="mb-0">{post.data.title}</h1>
+        <div class="font-thin">
+          Published on {post.data.date.toLocaleDateString()}
+        </div>
+      </div>
       <Content />
     </article>
   </div>
