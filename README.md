@@ -6,8 +6,8 @@
 - [x] Setup deployment
 - [x] Setup domain
 - [x] Build homepage
-- [ ] Write one simple blogpost
-- [ ] Setup routing and whatnot for the blogpost
+- [x] Write one simple blogpost
+- [x] Setup routing and whatnot for the blogpost
 
 ## 🧞 Commands
 
