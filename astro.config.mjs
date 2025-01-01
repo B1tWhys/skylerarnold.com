@@ -11,6 +11,7 @@ import { targetBlank } from "./src/plugins/targetBlank";
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://skylerarnold.com",
   integrations: [
     tailwind(),
     sitemap(),
