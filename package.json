@@ -15,6 +15,7 @@
     "@astrojs/sitemap": "^3.2.1",
     "@astrojs/tailwind": "^5.1.4",
     "@expressive-code/plugin-line-numbers": "^0.38.3",
+    "@vercel/speed-insights": "^1.1.0",
     "astro": "^5.1.1",
     "astro-expressive-code": "^0.38.3",
     "hastscript": "^9.0.0",
