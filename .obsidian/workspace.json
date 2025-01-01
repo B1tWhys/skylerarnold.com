@@ -162,8 +162,10 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "e309062cb6587cd6",
+  "active": "e66f407f7a273605",
   "lastOpenFiles": [
+    "src/assets/favicon.svg",
+    "src/assets/my-logo.svg",
     "src/components/Banner.astro",
     "public/robots.txt",
     "dist/sitemap-index.xml",
@@ -174,7 +176,6 @@
     "dist/index.html",
     "dist/_astro/ec.bdd0b.css",
     "dist/_astro/ec.8zarh.js",
-    "dist/_astro/_blogpostId_.B9zTDSKx.css",
     "dist/favicon.svg"
   ]
 }
