@@ -30,15 +30,6 @@ And I think I should even be able to use some mdx to define a list easily:
 }
 </ol>
 
-Astro also has some pretty slick features for image handling. I handed it a `4368x2912` png image,
-and I think it's going to downscale it to the correct size, and setup the html with the reactive attributes
-so that the right version shows up:
-<Picture src={testImage}
-      alt="A test image"
-      widths={[240, 540, 720, testImage.width]}
-      sizes={`(max-width: 360px) 240px, (max-width: 720px) 540px, (max-width: 1600px) 720px, ${testImage.width}`} />
-
-
 # H1
 ## H2
 ### H3
