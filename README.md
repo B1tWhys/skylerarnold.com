@@ -1,10 +1,11 @@
 # Skyler Arnold's personal website
 
 # TODO:
+
 - [x] Bootstrap the repo w/ tailwind & whatnot
 - [x] Setup deployment
 - [x] Setup domain
-- [ ] First pass customizing home page
+- [ ] Build homepage
 - [ ] Write one simple blogpost
 - [ ] Setup routing and whatnot for the blogpost
 
@@ -20,3 +21,4 @@ All commands are run from the root of the project, from a terminal:
 | `npm run preview`         | Preview your build locally, before deploying     |
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
+| `npm run format`          | Formats the codebase                             |
