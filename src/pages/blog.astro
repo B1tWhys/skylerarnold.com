@@ -5,7 +5,6 @@ import { Icon } from "astro-icon/components";
 
 let posts = await getCollection("blog");
 posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-// posts = [...posts, ...posts, ...posts, ...posts, ...posts, ...posts, ...posts];
 ---
 
 <Layout>

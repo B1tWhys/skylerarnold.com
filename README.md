@@ -8,10 +8,11 @@
 - [x] Build homepage
 - [x] Write one simple blogpost
 - [x] Setup routing and whatnot for the blogpost
-- [ ] Add favicon
+- [x] Add favicon
 - [ ] Add link to this source code
 - [ ] Write a second blogpost
 - [ ] Add nav from the homepage to the blogposts
+  - [x] Add blog index page
 - [ ] Add resume page
 - [ ] Add dark mode
 
