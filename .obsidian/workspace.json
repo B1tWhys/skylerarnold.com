@@ -1,0 +1,180 @@
+{
+  "main": {
+    "id": "5eb3b9e424453284",
+    "type": "split",
+    "children": [
+      {
+        "id": "cd1a07c6c7e82632",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e309062cb6587cd6",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "src/blog/hello-world.mdx",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "hello-world"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "c78db45c21a871f9",
+    "type": "split",
+    "children": [
+      {
+        "id": "f80ced66930e2690",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e66f407f7a273605",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "ea8f354072127aaf",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "bffb5a935d47a04a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "d75b8734447462bf",
+    "type": "split",
+    "children": [
+      {
+        "id": "8d57ebf7b0b73774",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4f12bd88687a564f",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "src/blog/hello-world.mdx",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for hello-world"
+            }
+          },
+          {
+            "id": "ee82d6cc8b5bff6d",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "src/blog/hello-world.mdx",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from hello-world"
+            }
+          },
+          {
+            "id": "e60fe267241480fd",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "6a9a45d42f8e553b",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "src/blog/hello-world.mdx"
+              },
+              "icon": "lucide-list",
+              "title": "Outline of hello-world"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "e309062cb6587cd6",
+  "lastOpenFiles": [
+    "public/robots.txt",
+    "dist/sitemap-index.xml",
+    "dist/sitemap-0.xml",
+    "dist/blog/hello-world/index.html",
+    "dist/blog/hello-world",
+    "dist/blog",
+    "dist/index.html",
+    "dist/_astro/ec.bdd0b.css",
+    "dist/_astro/ec.8zarh.js",
+    "dist/_astro/_blogpostId_.B9zTDSKx.css",
+    "dist/_astro",
+    "dist/favicon.svg"
+  ]
+}

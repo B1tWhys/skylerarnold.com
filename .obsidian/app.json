@@ -1,0 +1,12 @@
+{
+  "vimMode": true,
+  "autoConvertHtml": false,
+  "trashOption": "none",
+  "userIgnoreFilters": [
+    "node_modules/"
+  ],
+  "newFileLocation": "folder",
+  "newFileFolderPath": "src/blog",
+  "useMarkdownLinks": true,
+  "showUnsupportedFiles": true
+}
