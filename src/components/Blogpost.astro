@@ -1,0 +1,21 @@
+---
+import { render } from "astro:content";
+import Layout from "./Layout.astro";
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<Layout title={post.data.title} description={post.data.description}>
+  <div class="w-full flex align-middle items-center justify-center">
+    <article class="prose bg-slate-300 px-8 shadow-lg shadow-slate-500 pt-4">
+      <div>
+        <h1 id="title" class="mb-0">{post.data.title}</h1>
+        <div class="font-thin">
+          Published on {post.data.date.toLocaleDateString()}
+        </div>
+      </div>
+      <Content />
+    </article>
+  </div>
+</Layout>
