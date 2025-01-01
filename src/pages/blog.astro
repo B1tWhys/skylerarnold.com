@@ -1,0 +1,47 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../components/Layout.astro";
+import { Icon } from "astro-icon/components";
+
+let posts = await getCollection("blog");
+posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+// posts = [...posts, ...posts, ...posts, ...posts, ...posts, ...posts, ...posts];
+---
+
+<Layout>
+  <div class="w-full flex align-middle items-center justify-center">
+    <main
+      class="prose bg-slate-300 w-full min-h-screen shadow-slate-500 shadow-lg relative"
+    >
+      <a href="/rss.xml" title="RSS Feed" class="absolute right-2 top-2">
+        <Icon name="tabler:rss" class="w-6" />
+      </a>
+      <h1 class="text-center flex flex-col items-center">Latest posts</h1>
+      <div class="w-full flex justify-center"></div>
+      <div class="list-none p-0">
+        {
+          posts.map((post) => (
+            <section class="bg-slate-400 rounded-md p-2 m-4 prose-headings:m-0 shadow-slate-600 shadow-sm">
+              <div class="flex align-baseline justify-between">
+                <h2 class="font-bold">{post.data.title}</h2>
+                <div class="font-light">
+                  {post.data.date.toLocaleDateString()}
+                </div>
+              </div>
+              <summary class="">{post.data.description}</summary>
+              <a
+                class="hover:text-sky-400 group transition-colors"
+                href={`/blog/${post.id}`}
+              >
+                Check it out
+                <span class="inline-block transition-transform group-hover:translate-x-1">
+                  →
+                </span>
+              </a>
+            </section>
+          ))
+        }
+      </div>
+    </main>
+  </div>
+</Layout>

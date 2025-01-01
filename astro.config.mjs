@@ -9,6 +9,8 @@ import expressiveCode from "astro-expressive-code";
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
 import { targetBlank } from "./src/plugins/targetBlank";
 
+import icon from "astro-icon";
+
 // https://astro.build/config
 export default defineConfig({
   site: "https://skylerarnold.com",
@@ -22,6 +24,11 @@ export default defineConfig({
       },
     }),
     mdx(),
+    icon({
+      include: {
+        tabler: ["rss"],
+      },
+    }),
   ],
   experimental: {
     contentIntellisense: true,

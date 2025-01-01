@@ -1,10 +1,11 @@
 ---
 title: Hello world!
-description: Simple test blogpost
+description: Test blogpost to check the website's functionality
 date: 2024-12-31
 tags: ["frontend", "meta"]
 ---
-import { Picture } from 'astro:assets'
+
+import { Picture } from "astro:assets";
 
 This is my first blogpost! What else there to do but test out all the nifty features
 I've just spent the last few hours configuring.
@@ -24,15 +25,21 @@ def bfs(start):
 > Here's a block quote
 
 And I think I should even be able to use some mdx to define a list easily:
+
 <ol class="list-decimal">
-{
-    ["foo", "bar", "baz"].map((x) => <li>{x}</li>)
-}
+  {["foo", "bar", "baz"].map((x) => (
+    <li>{x}</li>
+  ))}
 </ol>
 
 # H1
+
 ## H2
+
 ### H3
+
 #### H4
+
 ##### H5
+
 ###### H6
