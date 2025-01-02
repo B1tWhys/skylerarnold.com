@@ -1,3 +1,7 @@
+// import { retro } from "daisyui/themes/retro";
+import daisyui from "daisyui";
+import { retro, business } from "daisyui/src/theming/themes";
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
@@ -22,8 +26,20 @@ export default {
     },
   },
   daisyui: {
-    themes: ["retro", "business"],
-    darkTheme: "business",
+    themes: [
+      {
+        light: {
+          ...retro,
+          accent: "#7dd3fc",
+        },
+        dark: {
+          ...business,
+          accent: "#84d0f1",
+        },
+      },
+    ],
+    // themes: ["retro", "business"],
+    // darkTheme: "business",
   },
-  plugins: [require("@tailwindcss/typography"), require("daisyui")],
+  plugins: [require("@tailwindcss/typography"), daisyui],
 };

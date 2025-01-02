@@ -39,5 +39,5 @@ export default defineConfig({
       [targetBlank, { ignorePattern: /.*localhost|skylerarnold\.com.*/ }],
     ],
   },
-  prefetch: true,
+  prefetch: false,
 });
