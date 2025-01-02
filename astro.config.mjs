@@ -22,7 +22,7 @@ export default defineConfig({
       defaultProps: {
         showLineNumbers: true,
       },
-      themes: ["everforest-light"],
+      themes: ["dracula", "everforest-light"],
     }),
     mdx(),
     icon({
@@ -39,5 +39,5 @@ export default defineConfig({
       [targetBlank, { ignorePattern: /.*localhost|skylerarnold\.com.*/ }],
     ],
   },
-  prefetch: true
+  prefetch: true,
 });

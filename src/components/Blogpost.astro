@@ -8,11 +8,11 @@ const { Content } = await render(post);
 
 <GlobalLayout title={post.data.title} description={post.data.description}>
   <div class="flex w-full items-center justify-center">
-    <article class="prose px-3 pt-1 rounded-md border-2 border-r-2 border-base-200 shadow-md">
+    <article class="prose px-3 pt-1 rounded-md border-2 border-base-200 dark:border dark:border-base-content shadow-md">
       <div class="text-center">
         <h1 id="title" class="mb-0">{post.data.title}</h1>
-        <div class="font-thin">
-          Published on {post.data.date.toLocaleDateString()}
+        <div class="font-thin text-sm">
+          Published: {post.data.date.toLocaleDateString()}
         </div>
       </div>
       <Content />

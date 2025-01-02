@@ -22,7 +22,8 @@ export default {
     },
   },
   daisyui: {
-    themes: ["retro"],
+    themes: ["retro", "business"],
+    darkTheme: "business",
   },
   plugins: [require("@tailwindcss/typography"), require("daisyui")],
 };
