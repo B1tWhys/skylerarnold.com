@@ -2,9 +2,11 @@
   "vimMode": true,
   "autoConvertHtml": false,
   "trashOption": "none",
-  "userIgnoreFilters": ["node_modules/"],
+  "userIgnoreFilters": [
+    "node_modules/"
+  ],
   "newFileLocation": "folder",
-  "newFileFolderPath": "src/blog",
+  "newFileFolderPath": "src/assets",
   "useMarkdownLinks": true,
   "showUnsupportedFiles": true
 }
