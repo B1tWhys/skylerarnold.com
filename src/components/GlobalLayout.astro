@@ -1,26 +1,31 @@
 ---
 import SpeedInsights from "@vercel/speed-insights/astro";
+import Navbar from "./Navbar.astro";
 
 interface Props {
   title?: string;
   description?: string;
+  hideNavbar?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, hideNavbar } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en" class="w-full bg-slate-200">
+<html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title || "Skyler Arnold"}</title>
+    <title>
+      {title !== undefined ? "Skyler Arnold | " + title : "Skyler Arnold"}
+    </title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     {description && <meta name="description" content={description} />}
     <link rel="sitemap" href="/sitemap-index.xml" />
   </head>
-  <body class="w-full">
+  <body class="h-full">
     <SpeedInsights />
+    {!hideNavbar && <Navbar />}
     <slot />
   </body>
 </html>

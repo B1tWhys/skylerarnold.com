@@ -21,5 +21,8 @@ export default {
       },
     },
   },
-  plugins: [require("@tailwindcss/typography")],
+  daisyui: {
+    themes: ["retro"],
+  },
+  plugins: [require("@tailwindcss/typography"), require("daisyui")],
 };

@@ -15,6 +15,7 @@
   - [x] Add blog index page
 - [ ] Add resume page
 - [ ] Add dark mode
+- [ ] Setup linting git hooks
 
 ## 🧞 Commands
 

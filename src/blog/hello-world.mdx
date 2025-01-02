@@ -14,7 +14,12 @@ My favorite thing is how code blocks look, courtesy of [Expressive Code](https:/
 
 ```python
 # breadth_first_search.py
-def bfs(start):
+@dataclass
+class Node:
+  value: any
+  children: dict[str, "Node"]
+
+def bfs(start: Node):
   q = deque([start])
   while q:
     cur = q.popleft()
