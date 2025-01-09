@@ -7,6 +7,7 @@ import mdx from "@astrojs/mdx";
 
 import expressiveCode from "astro-expressive-code";
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
+import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
 import { targetBlank } from "./src/plugins/targetBlank";
 import remarkMath from "remark-math";
 
@@ -22,7 +23,7 @@ export default defineConfig({
     tailwind(),
     sitemap(),
     expressiveCode({
-      plugins: [pluginLineNumbers()],
+      plugins: [pluginLineNumbers(), pluginCollapsibleSections()],
       defaultProps: {
         showLineNumbers: true,
       },
