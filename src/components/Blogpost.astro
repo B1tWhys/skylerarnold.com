@@ -1,14 +1,21 @@
 ---
 import { render } from "astro:content";
 import GlobalLayout from "./GlobalLayout.astro";
+import kratax from "rehype-katex/";
 
 const { post } = Astro.props;
 const { Content } = await render(post);
 ---
 
-<GlobalLayout title={post.data.title} description={post.data.description}>
+<GlobalLayout
+  title={post.data.title}
+  description={post.data.description}
+  linkKatex
+>
   <div class="flex w-full items-center justify-center">
-    <article class="prose px-3 pt-1 rounded-md border-2 border-base-200 dark:border dark:border-base-content shadow-md">
+    <article
+      class="prose px-3 pt-1 rounded-md border-2 border-base-200 dark:border dark:border-base-content shadow-md"
+    >
       <div class="text-center">
         <h1 id="title" class="mb-0">{post.data.title}</h1>
         <div class="font-thin text-sm">

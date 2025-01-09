@@ -8,8 +8,10 @@ import mdx from "@astrojs/mdx";
 import expressiveCode from "astro-expressive-code";
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
 import { targetBlank } from "./src/plugins/targetBlank";
+import remarkMath from "remark-math";
 
 import icon from "astro-icon";
+import rehypeKatex from "rehype-katex";
 
 // https://astro.build/config
 export default defineConfig({
@@ -35,8 +37,10 @@ export default defineConfig({
     contentIntellisense: true,
   },
   markdown: {
+    remarkPlugins: [[remarkMath, {}]],
     rehypePlugins: [
       [targetBlank, { ignorePattern: /.*localhost|skylerarnold\.com.*/ }],
+      [rehypeKatex, {}],
     ],
   },
   prefetch: false,

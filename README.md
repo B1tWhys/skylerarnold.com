@@ -9,15 +9,14 @@
 - [x] Write one simple blogpost
 - [x] Setup routing and whatnot for the blogpost
 - [x] Add favicon
-- [ ] Add dark mode
+- [x] Add dark mode
+- [x] Add math support
 - [ ] Add link to this source code
 - [ ] Write a second blogpost
 - [ ] Add nav from the homepage to the blogposts
   - [x] Add blog index page
 - [ ] Add resume page
-- [ ] Add dark mode
 - [ ] Setup linting git hooks
-- [ ] Add resume
 - [ ] Add about page
 - [ ] Add projects page
   - [ ] Come up with list of projects
