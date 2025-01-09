@@ -4,10 +4,13 @@ description: "Deep dive into SQLite internals to learn how it works under the ho
 date: 2025-01-02
 ---
 
+I recently wrote a sqlite file parser in python from scratch. I thought I'd write a blog post about
+the things I learned along the way. I've chosen to keep things as simple as possible, as the goal isn't 
+to write a production ready sqlite library (the stdlib already  has one), rather it's to gain a more
+concrete understanding of how b-trees are implemented in real world databases.
 
-
-
-
+## Creating a test database
+Keeping the goal in mind, I decided to stick with a fairly database schema:
 
 ```sql
 CREATE TABLE users (
@@ -18,6 +21,71 @@ CREATE TABLE users (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+It's a pretty basic `users` table. Of note, however, is the `INTEGER PRIMARY KEY AUTOINCREMENT` column, and the 
+two `UNIQUE columns` (the username & email). As we'll see, these two unassuming tweaks to the schema have some
+pretty significant ramifications on performance for certain queries.
+
+I also needed to bootstrap some data. Here's a script from chatgpt that handles creating the database and filling
+in 1k test rows:
+```python
+import sqlite3
+
+# Connect to SQLite database (or create it if it doesn't exist)
+conn = sqlite3.connect("example.db")
+cursor = conn.cursor()
+
+# Create the users table if it doesn't exist
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+""")
+
+# Insert 1000 test users
+users_to_insert = []
+for i in range(1, 1001):
+    username = f"user_{i}"
+    email = f"user_{i}@example.com"
+    password = f"password_{i}"  # Predictable test value for password
+    users_to_insert.append((username, email, password))
+
+# Use executemany for batch insertion
+cursor.executemany("""
+INSERT INTO users (username, email, password_hash)
+VALUES (?, ?, ?)
+""", users_to_insert)
+
+# Commit changes and close connection
+conn.commit()
+conn.close()
+```
+
+
+## The File Header
+
+Sqlite files (like so many file formats) start with a header. It's just a bunch of
+**big endian** (very important!) fields, concatenated together. Here's a handy table
+for reference, and a decoder. You can paste the first 100 (or more) bytes of a `sqlite.db` 
+as hex into textbox, and it'll parse the fields out. 
+
+
+import SqliteHeaderParser from "./read-sqlite-with-a-hex-editor/HeaderParser";
+
+<SqliteHeaderParser client:load />
+
+Of major importance is the `pageSize` field. Pages are the highest level structure
+in a sqlite file, so knowing how big they are is pretty useful. In my case, the page
+size is 2^12 (4096). We'll skip the rest of the fields for now, but some of them will 
+be coming up a little later.
+
+## Page Headers
+My file has 35 pages, each 4096 ($2^12$) bytes in length, for a total of ~140Kb of data. The first page has that file header in it, which 
+
 
 {/* Why is the page size so small here? If I'm reading VS Code right ![](../assets/hexdump1.png)
 
@@ -60,9 +128,7 @@ Maybe it means `2^16 == 65536`?
  */}
 
 
-import SqliteHeaderParser from "./read-sqlite-with-a-hex-editor/HeaderParser";
 
-<SqliteHeaderParser client:load />
 
 > https://www.sqlite.org/fileformat.html#the_database_header
 
