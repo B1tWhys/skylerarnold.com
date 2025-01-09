@@ -1,0 +1,51 @@
+---
+title: Broken example of mdx + react local component
+description: This is a broken example of mdx + react local component. Pls ignore
+date: 2025-02-01
+---
+
+# Normal markdown (like this) is working completely fine
+
+
+export function NonInteractiveLocalComponent() {
+  return <h3>Non-interactive component</h3>;
+}
+
+A component that doesn't use state is also fine:
+
+<NonInteractiveLocalComponent />
+
+
+import { useState } from 'react';
+
+export function InteractiveLocalComponent({'client:load': clientLoad}) {
+  const [testState, setTestState] = useState(1);
+  function increment() {
+    setTestState(testState + 1);
+  }
+
+  return (
+    <div>
+      State is currently: {testState} <br />
+      <button onClick={() => setCounter(counter + 1)}>Increment</button>
+    </div>
+  );
+}
+
+When I add state things break though. When I try to render the InteractiveLocalComponent, I get:
+
+> Objects are not valid as a React child (found: object with keys \{astro:jsx, type, props\}). If you meant to render a collection of children, use an array instead.
+
+{/* <InteractiveLocalComponent /> */}
+
+
+And if I add the client:load directive, it fails with:
+
+> Could not render InteractiveLocalComponent. No matching import has been found for InteractiveLocalComponent.
+
+{/* <InteractiveLocalComponent client:load="react" /> */}
+
+
+import TestComponent from "./read-sqlite-with-a-hex-editor/TestComponent";
+
+<TestComponent client:load="react" />
