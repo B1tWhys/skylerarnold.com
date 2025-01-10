@@ -12,8 +12,8 @@
 - [x] Add dark mode
 - [x] Add math support
 - [ ] Add link to this source code
-- [ ] Write a second blogpost
-- [ ] Add nav from the homepage to the blogposts
+- [x] Write a second blogpost
+- [x] Add nav from the homepage to the blogposts
   - [x] Add blog index page
 - [ ] Add resume page
 - [ ] Setup linting git hooks
@@ -22,8 +22,8 @@
   - [ ] Come up with list of projects
 
 # Blogpost ideas
-- Reading sqlite with a hex editor
 - Learning AT protocol
+- Building home pi lab (and then training AI on it)
 ## 🧞 Commands
 
 All commands are run from the root of the project, from a terminal:
