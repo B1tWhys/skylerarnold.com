@@ -113,7 +113,7 @@ wrote that handles parsing the database header out of a file. ~~Here's a handy t
 for reference, and a decoder. You can paste the first 100 (or more) bytes of a `sqlite.db` 
 as hex into textbox, and it'll parse the fields out.~~
 
-```python
+```python collapse={5-24, 30-49} {50}
 @dataclass
 class FileHeader:
     magic_bytes: bytes
@@ -172,214 +172,309 @@ class FileHeader:
         self.vacuum_mode = vacuum_mode != 0
 ```
 
+Most of the heavy lifting here is happening on line 50. I'm using the python `struct.unpack` module
+to parse the first 100 bytes of the file and break it up into a list of separate values that can be
+manipulated easily. The format string I'm passing (`>16sH6B12i20x2i`) can be read like this:
 
-{/*
-import SqliteHeaderParser from "./read-sqlite-with-a-hex-editor/HeaderParser";
+| code | meaning                                                        |
+|------|----------------------------------------------------------------|
+| >    | Use little endian                                              |
+| 16s  | An array of 16 bytes of raw data                               |
+| H    | A single unsigned short (2 byte) value                         |
+| 6B   | 6 unsigned 1-byte integers                                     |
+| 12i  | 12 signed 4-byte integers                                      |
+| 20x  | A gap of 20 bytes (reserved in the sqlite spec for future use) |
+| 2i   | 2 integer values                                               |
 
-<SqliteHeaderParser client:only="react" />
-*/}
-
-Of major importance is the `pageSize` field. Pages are the highest level structure
+The only field of importance right now is the `pageSize` field, but I parsed everything out to make life
+a little simpler later. Pages are the highest level structure
 in a sqlite file, so knowing how big they are is pretty useful. We'll skip the rest 
 of the fields for now, but some of them will be coming up a little later.
 
-## Sqlite page
+## The `sqlite_schema` table
 Now that we know the page size, we need to parse the special `sqlite_schema` table. This is a
 special table that gives us information about the other tables in the database. The first page
 of the database file is always the root of the b-tree for this table, so it's very easy to find.
 
 Conveniently for us, the example database I set up has only 1 table and a few indexes, so the entire
 `sqlite_schema` table fits in one page. That means that the root page (i.e. page 1) is also a leaf
-page, which means (for now) we only need to implement reading leaf table pages! Here's what that
-implementation looks like:
+page, which means (for now) we only need to implement reading leaf table pages!
 
-```python
+The first step is to parse the header for the page. I used an extremely similar pattern to what I did
+to parse the file level header:
+
+```python {11}
+class BTreePageType(Enum):
+    TABLE_INTERIOR = 0x05
+    TABLE_LEAF = 0x0D
+    INDEX_INTERIOR = 0x02
+    INDEX_LEAF = 0x0A
+
 @dataclass
-class BTreePage_TableLeaf(Page):
+class PageHeader:
+    type_id: BTreePageType
+    first_free_block_offset: int
+    num_cells_in_page: int
+    cell_content_area_offset: int
+    fragmented_free_bytes: int
+    right_ptr: Optional[int]
+    header_size: int
+
+    def __init__(self, file: BinaryIO):
+        self.type_id = BTreePageType(file.read(1)[0])
+        (self.first_free_block_offset,
+         self.num_cells_in_page,
+         self.cell_content_area_offset,
+         self.fragmented_free_bytes) = struct.unpack(">3HB", file.read(7))
+        if self.type_id in (BTreePageType.TABLE_INTERIOR, BTreePageType.INDEX_INTERIOR):
+            self.right_ptr = struct.unpack(">I", file.read(4))[0]
+            self.header_size = 12
+        else:
+            self.right_ptr = None
+            self.header_size = 8
+```
+
+You may have noticed in the diagram earlier that there's one pointer at the end of the internal page
+that's not part of a cell:
+
+This special pointer is used when we're searching for a value that's greater than all the keys in the list.
+So in that example, if we were looking for a key of `1000`, we'd exhaust all the keys in our internal page,
+and then follow that right-most pointer to get to the next page. Since that last pointer doesn't fit in any
+of the cells, it's stored in the header (line 13 in the above code snippet). This is only relevant for internal
+pages though, so we only set that `rightPtr` field on the relevant page types.
+
+In my example database, the page header for the `sqlite_schema` table looks like this:
+
+| Field                    | Value      |
+|--------------------------|------------|
+| type_id                  | TABLE_LEAF |
+| first_free_block_offset  | 4088       |
+| num_cells_in_page        | 4          |
+| cell_content_area_offset | 3680       |
+| fragmented_free_bytes    | 0          |
+| right_ptr                | None       |
+| header_size              | 8          |
+
+As expected, this is a `TABLE_LEAF` page. For reading data, we don't really have to care about free blocks or fragmented
+free bytes, so we'll ignore those fields.
+
+In a table leaf page like this one, each cell corresponds to one row in the table. So `num_cells_in_page` tells us that this
+table has 4 items in it. Reassuringly, this lines up with what we get from reading the table using the sqlite CLI:
+
+```sql frame="terminal" showLineNumbers=false
+sqlite> SELECT COUNT(1) FROM sqlite_schema;
+4
+```
+
+Incidentally, this explains why `SELECT COUNT(1) FROM some_big_table` queries are so slow! The database engine would need
+to walk the b-tree to find every leaf pages in the table, and add up the `num_cells_in_page` for every one to get the
+exact answer.
+
+Anyway, we now have everything we need to read the cells from the table! Here's how I implemented that:
+
+```python {10-16}
+@dataclass
+class BTreePage_TableLeaf:
+    offset: int
+    pageHeader: PageHeader
     cells: List[TableLeafCell]
 
-    def __init__(self, file: BinaryIO, database: "Database"):
+    def __init__(self, file: BinaryIO):
         self.offset = file.tell()
-        if self.offset <= 100:
-            self.offset = 0
         self.cells = []
         self.pageHeader = PageHeader(file)
-				# This is an abstraction
 
         num_cells = self.pageHeader.numCellsInPage
         cell_ptrs = struct.unpack(f'>{num_cells}H', file.read(num_cells * 2))
         for ptr in cell_ptrs:
             file.seek(self.offset + ptr)
             self.cells.append(TableLeafCell(file, database.header.text_encoding))
-
-    def get_record(self, row_id: int) -> Optional[Record]:
-        idx = bisect_left(self.cells, row_id, key=lambda cell: cell.row_id)
-        if idx < len(self.cells) and self.cells[idx].row_id == row_id:
-            return self.cells[idx].record
-        else:
-            return None
 ```
 
+This is pretty strait forward. First we read the page header to figure out how many cells
+to expect. Immediately after the header ends there's an array of offsets (relative to the
+beginning of the page) which tell us where to find the cells. We iterate over those offsets
+and parse each cell! Each cell contains its key, and array of values, one value per column 
+in the table! Later on we'll dig into what actually happens to parse a cell into those values,
+but it's really just an implementation detail.
+
+Here's what we get by dumping all the cell payloads in the sqlite_schema table:
 
 
-
-
-
-
-My file has 35 pages, each 4096 ($2^{12}$) bytes in length, for a total of ~140Kb of data.
-Here's a simplified diagram of the page layout:
-
-![page layout](../assets/sqlite_page_layout_dark.svg)
-
-This header is quite a bit shorter than the file-level one, only 8-12 bytes:
-
-
-
-{/* > https://www.sqlite.org/fileformat.html#the_database_header
-
-# ROWID
-TODO: mention what a row id is and how to convert it to the actual row we care about
-B-tree pages
----
-Each b-tree page has at most 1 parent b-tree page. A page with no parent is called the root, and the root + all its children (and their children) is a full b-tree. It's possible (and indeed common) for a single page to be the entire tree (i.e. a root and a leaf). A b-tree is identified uniquely by the page number of its root page.
-
-There are 2 types of B-trees:
-
-**Table b-tree**
-- 64 bit signed integer key
-- Data stored in leaves
-
-**Index b-tree**
-- Arbitrary keys
-- No data stored at all
-
-There is 1 table b-tree for each table in the database, and there is 1 index b-tree for each index in the database.
-
-**Depth of a b-tree page**
-The depth of a leaf b-tree (page?) is 1, and the depth of an interior b-tree (page?) is 1 + the max depth of its children. In a well formed DB, all children will have the same depth
-
-Within either type of b-tree, there are 2 types of pages, interior and leaf pages
-
-### Interior page
-- contains K keys and K+1 pointers. A pointer is a 32-bit unsigned int page number of the child page
-- With one tiny exception, 2 \<= K. The upper bound on K is the number of keys that will fit in one page (which depends on the page size, of course)
-- For index b-trees, if a key is too large to fit in 1/4 of the space in a page, an overflow page is used. This never comes up for table b-trees since the uint keys there are never very large.
-- Pointers & keys **logically** alternate, with a pointer on both ends
-- Keys within one page are unique & sorted in ascending order **logically** left to right
-	- For any key X, pointers to the left of X go to pages where all the keys are \<= X and pointers to the right go to pages where the keys are > X
-- Each key and the pointer to its immediate left are combined into a **cell**. (the right most pointer at the very end of the page is a special case and not part of a cell)
-
-### Leaf page
-The docs haven't said anything about these yet...
-
-# Table b-trees
-Each entry in a table b-tree is a 64-bit signed integer key, and up to $2^{31} - 1$ bytes of arbitrary data. The key corresponds to the [rowid](https://www.sqlite.org/lang_createtable.html#rowid) of a row in the table (WITHOUT ROWID tables are a special case).
-
-For entries in an interior page, the values are always pointers to a child page. All actual data in the table is contained in the leaf pages.
-
-# Index b-trees
-In an index b-tree, the entries contain just a key of up to $2^{31}-1$ bytes and no data.
-
-# Finding a b-tree
-
-Page 1 (i.e. the first page, since they're 1-indexed) of the database always contains the `sqlite_schema` table's table b-tree. This table contains the root page number for all the other tables and indexes in the database.
-
-## Cells
-Each entry in a b-tree is a "cell". A cell contains a payload, which is a variable length part. For an index b-tree, the key is arbitrary length so the payload is the key. Interior table b-tree pages have only arbitrary length parts (these cells always have just a 64 bit key + a pointer) so they don't have a payload. Table b-tree leaf pages contain arbitrary length content (the actual data in a row in the table), so that content is the payload.
-
-If a cell gets too big it gets broken up into an overflow page, but this probably isn't really worth talking about.
-
-## Structure of a b-tree page
-Let `K` be the number of cells in the page
-
-1. The file header (only found on page 1)
-2. 8 or 12 byte page header (all fields big endian)
-	1. 1 byte page type id
-		1. 0x02 == interior index b-tree page
-		2. 0x05 == interior table b-tree page
-		3. 0x10 == leaf index b-tree page
-		4. 0x0d == leaf table b-tree page
-	2. 2 byte offset of the first freeblock on the page, or 0 if no freeblock exists
-	3. 2 byte int, number of cells in the page (`K`)
-	4. 2 byte offset for the cell content area
-	5. 1 byte number of free bytes (fragmented) in the content area
-	6. Only for interior b-tree pages, a 4 byte page number. This is the right most pointer that is handled weirdly and isn't part of a cell
-3. cell pointer array
-	1. A list of `K` 2-byte integer offsets to the cell contents. Arranged in order of keys, with the offset for the smallest key on the left and the largest key on the right
-4. unallocated space
-	1. Note that this is not a freeblock, it's its own thing
-5. cell content area
-	1. Sqlite tries to store the content for a cell as far toward the end of the page as possible
-6. reserved region
-
-### Freeblocks
-Freeblocks are how unused space inside a b-tree page is organized. They are organized in a singly-linked list, in order of increasing offset. Inside a freeblock, the first 2 bytes are an int offset in the current page where the next freeblock is (or 0 if this is the last freeblock). The next 2 bytes are the size of the freeblock (including the header).
-
-Because of this header structure, freeblocks require at least 4 bytes of space. If there's a gruop of 3 (or less) unused bytes in the cell content area they are called a **fragment**. In the page header there's a field for counting the amount of fragments. The number of fragments is always kept at or below 60 (so a total worst case of 180 unused bytes that aren't part of freeblocks).
-
-
-### Defragmenting
-If the number of fragments/freeblocks gets too high, sqlite will come through and reorganize the page to put all the free space together in the unallocated part of the page, and get rid of any freeblocks and/or fragments.
-
-
-# varint
-A varint is a static Huffman encoding of 64-bit twos-complement integers, between 1 and 9 bytes in length. I have no idea why I should care. Here's the info from the docs:
-> A variable-length integer or "varint" is a static Huffman encoding of 64-bit twos-complement integers that uses less space for small positive values. A varint is between 1 and 9 bytes in length. The varint consists of either zero or more bytes which have the high-order bit set followed by a single byte with the high-order bit clear, or nine bytes, whichever is shorter. The lower seven bits of each of the first eight bytes and all 8 bits of the ninth byte are used to reconstruct the 64-bit twos-complement integer. Varints are big-endian: bits taken from the earlier byte of the varint are more significant than bits taken from the later bytes. 
-
-## Structure of a cell
-
-The structure of a cell depends on the type of btree page that the cell is in:
-
-**Table b-tree interior**
-1. 4-byte page left-child page number
-2. varint key (rowid)
-
-
-**Table b-tree leaf (holds the actual data)**
-1. varint: number of bytes of the payload (inc overflow)
-2. varint: rowid
-3. payload up until the point that it overflows
-4. 4 byte big endian page number for the first page of the overflow page list. Omitted if all the payload fits on the b-tree page (not sure if that means the payload for this cell fits, or the payload for all the cells on this page)
-
-**Index b-tree interior cell**
-1. 4 byte page number which is a pointer to the left child
-2. varint total number of bytes of key payload (inc overflow)
-3. portion of the payload that doesn't overflow
-4. 4 byte page number of the fist page o the overflow page list (omitted in the same situation as the table b-tree leaf)
-
-**Index b-tree leaf cell**
-1. varint - total number of bytes of key payload (inc overflow)
-2. Portion of the payload that doesn't overflow
-3. 4 byte page number of the fist page o the overflow page list (omitted in the same situation as the table b-tree leaf)
-
-# Schema layer
-
-## Record format
-1. header
-	1. varint: size of the header in bytes (inc this value)
-	2. For each column, a "serial type" number representing the datatype of that column. Described below
-1. body
-
-
-# In practice
-Set r2 endianness:
 ```
-e cfg.bigendian=true
+['table', 'users', 'users', 2, 'CREATE TABLE users (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    username TEXT NOT NULL UNIQUE,\n    email TEXT NOT NULL UNIQUE,\n    password_hash TEXT NOT NULL,\n    created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n)']
+['index', 'sqlite_autoindex_users_1', 'users', 3, None]
+['index', 'sqlite_autoindex_users_2', 'users', 4, None]
+['table', 'sqlite_sequence', 'sqlite_sequence', 5, 'CREATE TABLE sqlite_sequence(name,seq)']
 ```
 
-Define page header struct:
-```
- "td struct btreePageHeader {char typeId;short firstFreeblockOffset;short numCellsInPage;short cellContentAreaOffset;char fragmentedFreeBytes;unsigned int rightPtr;};"
+This is identical (albeit not quite so nicely formatted) to the output of selecting the rows of the table:
+```sql frame="terminal" showLineNumbers=false
+sqlite> SELECT * FROM sqlite_schema;
+
+table|users|users|2|CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+index|sqlite_autoindex_users_1|users|3|
+index|sqlite_autoindex_users_2|users|4|
+table|sqlite_sequence|sqlite_sequence|5|CREATE TABLE sqlite_sequence(name,seq)
 ```
 
-Print a page header:
-```
-tp btreePageHeader
+Paraphrasing the docs, the rows here each represent an object in the database. The columns represent (in order):
+
+- The type of object (table/index/trigger/etc)
+- The name of the object (in the case of a table, it's the name of the table)
+- The table that the object references
+	- For a table, this is just the table's name again
+	- For an index, this is the table that the index is on
+- **The root page number for the object**
+- The sql used to create the object. This is empty for the implicit indexes that sqlite created as a result of 
+the `UNIQUE` constraints on the `username` & `email` columns
+
+Notably, for some reason there isn't a column in this table to tell us what column(s) an object refers to.
+This turned out to be an issue later on when I tried to use indexes, since there isn't an easy way to figure
+out which index covers a specific column. The only way to do it is to parse the SQL, which seems a bit silly.
+
+Anyway, for now all we need is the root page number of the `users` table: 2.
+
+## Reading the `users` table
+Now that we know that the root of the `users` table is page `2`, we can repeat this process for that tree! Except
+there's a hitch. Since I populated this table with 1000 records (as opposed to the 4 records in the sqlite_schema
+table), this table doesn't fit on one page. So we've got slightly more work to do here to find the leaf page.
+
+Since we're dealing with multiple page types now, this seems like a good time to
+do a little refactoring. Specifically, I'm splitting things out into an abstract
+base class called `Page`, which will help keep things organized as we have to deal
+with more and more different types of database tables.
+
+```python ins={1-25,37,49-54} del={38-41}
+@dataclass
+class Page(ABC):
+    offset: int
+    pageHeader: PageHeader
+    cells: List[Cell]
+
+    def __init__(self, file: BinaryIO):
+        self.offset = file.tell()
+        # If this is the first page of the database, the file-level header shifts everything by 100 bytes
+        if self.offset <= 100:
+            self.offset = 0
+        self.cells = []
+        self.pageHeader = PageHeader(file)
+
+    @staticmethod
+    def build_page(file: BinaryIO) -> "Page":
+        page_type = BTreePageType(file.read(1)[0])
+        file.seek(-1, os.SEEK_CUR)
+        match page_type:
+            case BTreePageType.TABLE_LEAF:
+                return BTreePage_TableLeaf(file)
+            case BTreePageType.TABLE_INTERIOR:
+                return BTreePage_TableInterior(file)
+            case _:
+                raise ValueError(f"Unsupported page type: {page_type}")
+		
+		@abstractmethod
+    def get_record(self, key: any) -> Optional["Record"]:
+        pass
+
+
+@dataclass
+class BTreePage_TableLeaf(Page):
+    cells: List[TableLeafCell]
+
+    def __init__(self, file: BinaryIO):
+        super().__init__(file)
+
+				self.offset = file.tell()
+        self.cells = []
+        self.pageHeader = PageHeader(file)
+
+        num_cells = self.pageHeader.num_cells_in_page
+        cell_ptrs = struct.unpack(f'>{num_cells}H', file.read(num_cells * 2))
+        for ptr in cell_ptrs:
+            file.seek(self.offset + ptr)
+            self.cells.append(TableLeafCell(file, db.header.text_encoding))
+		
+		def get_record(self, row_id: int) -> Optional[Record]:
+			idx = bisect_left(self.cells, row_id, key=lambda cell: cell.row_id)
+			if idx < len(self.cells) and self.cells[idx].row_id == row_id:
+					return self.cells[idx].record
+			else:
+					return None
 ```
 
-## The actual process
-1. Skip past the file header
+With that refactoring out of the way, it's pretty easy to add support for `TableInterior` pages:
+
+```python
+@dataclass
+class BTreePage_TableInterior(Page):
+    cells: List[TableInteriorCell]
+
+    def __init__(self, file: BinaryIO):
+        super().__init__(file)
+
+        num_cells = self.pageHeader.num_cells_in_page
+        cell_ptrs = struct.unpack(f'>{num_cells}H', file.read(num_cells * 2))
+        for ptr in cell_ptrs:
+            file.seek(self.offset + ptr)
+            self.cells.append(TableInteriorCell(file))
+		
+		def get_record(self, row_id) -> Optional[Record]:
+			idx = bisect_left(self.cells, row_id, key=lambda cell: cell.key)
+			if idx < len(self.cells) and self.cells[idx].key >= row_id:
+					child_page = self.database.get_page(self.cells[idx].child_page_ptr)
+			else:
+					child_page = self.database.get_page(self.pageHeader.right_ptr)
+			return child_page.get_record(row_id)
 ```
-s +100
+
+The main difference here is that instead of `get_record` being able to return the
+record directly, it instead searches for a child page and then delegates looking up the
+data to the child. If the child is another `TableInterior` page then it'll keep delegating
+down the tree recursively until we eventually hit a leaf that returns a value.
+
+
+And that's all we need to read records out of the database! I added one more `Database` abstraction
+to help keep things organized:
+```python
+class Database:
+    def __init__(self, file: BinaryIO):
+        self.file = file
+        self.header = FileHeader(file)
+        self.schema_page = self.get_page(1)
+
+    def get_root_page_num(self, target_object_name, target_object_type="table"):
+        for record in self.schema_page.records:
+            object_type, object_name, object_table, object_page, schema = record.values
+            if object_name == target_object_name and object_type == target_object_type:
+                return object_page
+
+    def get_page(self, page_number) -> Page:
+        page_offset = (page_number - 1) * self.header.page_size
+        if page_offset == 0:
+            page_offset += 100
+        self.file.seek(page_offset)
+        return Page.build_page(self, self.file)
 ```
-2.  */}
+
+and now we're ready to go! Looking back at our original goal, we wanted to look up the data for the
+user with row id `450`. Here's how we can do that:
+
+```python
+with open("./example.db", "rb") as file:
+		db = Databaes(file)
+		users_table_page_num = db.get_root_page_num("users")
+		users_table_root = db.get_page(users_table_page_num)
+		record = users_table_root.get_record(row_id)
+		print(record.values)
+```
+
+## Addendum: Parsing records
+I glossed over one important part above, which is the actual format that the data is stored inside
+the payload of each cell in the database. I chose to do that because some details of the format of 
+a cell depend on the type of page we're in.
