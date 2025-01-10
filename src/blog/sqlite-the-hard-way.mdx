@@ -142,8 +142,6 @@ as `rowid`) 5:
 
 ![btree example](../assets/sqlite_btree_example1.svg)
 
-# FIXME: make ^ look reasonable in light mode
-
 We'll start off at the root of the tree. Notice how the cells (green boxes) in the root of the tree are in ascending
 order (left to right) based on their key. Also, all the cells in the child pages of a cell have keys that are less
 than or equal to the cell in the parent page. The cell with `Key: 5` in the root page points to page 8, and page 
