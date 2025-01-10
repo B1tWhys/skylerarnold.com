@@ -19,7 +19,7 @@ posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
           posts.map((post) => (
             <section class="prose-headings:m-0">
               <div class="flex align-baseline justify-between">
-                <h2 class="font-bold">{post.data.title}</h2>
+                <h2 class="font-bold"><a class="no-underline" href={`/blog/${post.id}`}>{post.data.title}</a></h2>
                 <div class="font-light">
                   {post.data.date.toLocaleDateString()}
                 </div>
