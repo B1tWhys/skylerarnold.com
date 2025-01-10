@@ -7,11 +7,14 @@ import mdx from "@astrojs/mdx";
 
 import expressiveCode from "astro-expressive-code";
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
+import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
 import { targetBlank } from "./src/plugins/targetBlank";
 import remarkMath from "remark-math";
 
 import icon from "astro-icon";
 import rehypeKatex from "rehype-katex";
+
+import react from "@astrojs/react";
 
 // https://astro.build/config
 export default defineConfig({
@@ -20,13 +23,14 @@ export default defineConfig({
     tailwind(),
     sitemap(),
     expressiveCode({
-      plugins: [pluginLineNumbers()],
+      plugins: [pluginLineNumbers(), pluginCollapsibleSections()],
       defaultProps: {
         showLineNumbers: true,
       },
       themes: ["dracula", "everforest-light"],
     }),
     mdx(),
+    react(),
     icon({
       include: {
         tabler: ["rss"],

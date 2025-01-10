@@ -10,14 +10,13 @@ const path = Astro.url.pathname;
     <a id="logo" href="/" class="transition-all">
       <Image src={logo} alt="logo" width="30" format="svg" loading="eager" />
     </a>
-    <ul class="flex
-        gap-3">
+    <ul class="flex gap-3">
       {
         [
           ["/blog", "Blog"],
-          ["/about", "About"],
-          ["/projects", "Projects"],
-          ["/resume", "Resume"],
+          // ["/about", "About"],
+          // ["/projects", "Projects"],
+          // ["/resume", "Resume"],
         ].map(([href, text]) => {
           const activePage = path.startsWith(href);
           const activeClasses = ["decoration-accent", "underline-offset-8"];
@@ -27,6 +26,7 @@ const path = Astro.url.pathname;
             "underline-offset-8",
             "transition-all",
             "hover:text-accent",
+            ,
             ...(activePage ? activeClasses : []),
           ];
           return (

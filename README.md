@@ -21,6 +21,9 @@
 - [ ] Add projects page
   - [ ] Come up with list of projects
 
+# Blogpost ideas
+- Reading sqlite with a hex editor
+- Learning AT protocol
 ## 🧞 Commands
 
 All commands are run from the root of the project, from a terminal:
