@@ -4,14 +4,15 @@ description: "Deep dive into SQLite internals to learn how relational databases 
 date: 2025-01-09
 ---
 
-I recently wrote a sqlite file parser in python from scratch to learn more about SQLite's internals. I just 
-started this blog, so I figured it would be fun to write everything up in a blogpost! I've chosen to keep 
-things as simple as possible, as my goal isn't to write a production-ready sqlite library (the stdlib 
+I recently wrote a sqlite file parser in python from scratch to learn more about SQLite's internals. I just
+started this blog, so I figured it would be fun to write everything up in a blogpost! I've chosen to keep
+things as simple as possible, as my goal isn't to write a production-ready sqlite library (the stdlib
 already has one), rather it's to gain a more concrete understanding of how b-trees are implemented in practice.
 
 All the code from this project is available in [this github repo](https://github.com/B1tWhys/sqlite-parser/blob/main/parse_database.py).
 
 ## Creating a test database
+
 Keeping the goal in mind, I decided to stick with a fairly database schema:
 
 ```sql
@@ -26,8 +27,8 @@ CREATE TABLE users (
 
 It's a pretty basic `users` table, however there are 2 things worth noting:
 
-First is the `id INTEGER PRIMARY KEY AUTOINCREMENT`. In most circumstances, creating a column as a `PRIMARY KEY` does the 
-same as adding a `NOT NULL UNIQUE` constraint on the column. As we'll see, sqlite tables can only actually be (efficiently) 
+First is the `id INTEGER PRIMARY KEY AUTOINCREMENT`. In most circumstances, creating a column as a `PRIMARY KEY` does the
+same as adding a `NOT NULL UNIQUE` constraint on the column. As we'll see, sqlite tables can only actually be (efficiently)
 queried based on a special hidden column called `rowid`, which is a unique 64 bit unsigned int value that's always unique to
 each row automatically. Defining a `UNIQUE` column implicitly creates an index for that column. Indexes are really just an
 efficient means of converting the value in a column into a `rowid`. From there we always use the `rowid` to look up the actual
@@ -39,15 +40,14 @@ The other notable thing is the `UNIQUE` constraints on the username/email column
 constrains implicitly cause sqlite to create indexes for those columns, which we'll be using later when searching for records
 by email address.
 
-
 Besides creating the schema, I need to populate it with some records that we can search for. To make everything as easy as possible
 during debugging, my dummy records are all written like this:
 
-| id | username | email              | password_hash | created_at |
-|----|----------|--------------------|---------------|------------|
-| 1  | user_1   | user_1@example.com | password_1    | NOW()      |
-| 2  | user_2   | user_2@example.com | password_2    | NOW()      |
-| 3  | user_3   | user_3@example.com | password_3    | NOW()      |
+| id  | username | email              | password_hash | created_at |
+| --- | -------- | ------------------ | ------------- | ---------- |
+| 1   | user_1   | user_1@example.com | password_1    | NOW()      |
+| 2   | user_2   | user_2@example.com | password_2    | NOW()      |
+| 3   | user_3   | user_3@example.com | password_3    | NOW()      |
 
 Here's a simple script that bootstraps the database with 1k test users:
 
@@ -88,10 +88,11 @@ conn.commit()
 conn.close()
 ```
 
-
 ## Challenge
+
 I always like to have an objective in mind when I'm learning things. For this blogpost, my goal is to
 be able to look up user records from their id:
+
 ```sql
 SELECT * FROM users WHERE id = 450;
 ```
@@ -103,6 +104,7 @@ SELECT * FROM users where email = 'user_450@example.com';
 ```
 
 ## Overview
+
 Before jumping into writing code, I think it'll make sense to have a high level understanding
 of what the process will be. The high level steps necessary reading a record from a table based
 on its `rowid` (which, remember, is the same thing as the `id` column for this table) are:
@@ -112,28 +114,29 @@ on its `rowid` (which, remember, is the same thing as the `id` column for this t
 3. Read the `users` table to find the record corresponding to our target `rowid`
 
 ### Pages and B-trees
+
 A sqlite database is composed of pages. All pages in a database are the same size (a power of 2 between 512 and 65536).
 The pages are simply concatenated together, so if you know the index of a page (sqlite indexes the pages starting from 1,
 for whatever reason) and the page size for your database, it's easy to find the page itself.
 
-For our purposes, sqlite has 2 categories of pages: table pages and index pages. The table pages store the actual contents of 
-the tables (the username/password/email/etc, in our case), but table pages can only be searched efficiently by a special column 
-called `rowid` that's normally not visible. Index pages are used to efficiently map the values of other columns to the `rowid`, 
-which can then be looked up in the table pages. So to find a user by email, first we'd use index pages to convert the email 
+For our purposes, sqlite has 2 categories of pages: table pages and index pages. The table pages store the actual contents of
+the tables (the username/password/email/etc, in our case), but table pages can only be searched efficiently by a special column
+called `rowid` that's normally not visible. Index pages are used to efficiently map the values of other columns to the `rowid`,
+which can then be looked up in the table pages. So to find a user by email, first we'd use index pages to convert the email
 into a rowid, and then we'll use that rowid to find their row in the users table.
 
-Sqlite (and most other relational databases) are fundamentally built around a type of tree called a **b-tree** (sadly nobody 
+Sqlite (and most other relational databases) are fundamentally built around a type of tree called a **b-tree** (sadly nobody
 knows what `b` stands for). Each table/index is internally represented as a own b-tree, where each node in the tree is stored
 as one page in the file.
 
 Besides categorizing pages based on the type of tree they're part of, pages are also grouped based on whether they're
-a leaf (at the bottom layer of a b-tree) or an interior page (any of the other ones). 
+a leaf (at the bottom layer of a b-tree) or an interior page (any of the other ones).
 
 Each page in a sqlite database is composed of cells. The details of the cells depend a bit on what kind
-of page we're looking at (internal/leaf, and index/table), but for the most part cells have a key and a 
-payload. Within each page, the cells are sorted based on their key (so we can use a binary search to find 
+of page we're looking at (internal/leaf, and index/table), but for the most part cells have a key and a
+payload. Within each page, the cells are sorted based on their key (so we can use a binary search to find
 the cell we want). For `interior` pages, each cell contains a pointer to a child page. For leaf pages, the
-payload of the cell is either a `rowid` (for index leaf pages), or the contents of the database row (in the 
+payload of the cell is either a `rowid` (for index leaf pages), or the contents of the database row (in the
 case of table leaf pages).
 
 I think the easiest way to learn how this works is with an example. Here's a (conceptual) diagram
@@ -144,20 +147,18 @@ as `rowid`) 5:
 
 We'll start off at the root of the tree. Notice how the cells (green boxes) in the root of the tree are in ascending
 order (left to right) based on their key. Also, all the cells in the child pages of a cell have keys that are less
-than or equal to the cell in the parent page. The cell with `Key: 5` in the root page points to page 8, and page 
+than or equal to the cell in the parent page. The cell with `Key: 5` in the root page points to page 8, and page
 8 only contains cells with keys that are less than or equal to 5.
 
-So in our example, the smallest key that's \>= our target of 5 is 5, and it's got a pointer to page
-8. This implies that our target record is page 8, or one of page 8's children (if page 8 turns out 
+So in our example, the smallest key that's \>= our target of 5 is 5, and it's got a pointer to page 8. This implies that our target record is page 8, or one of page 8's children (if page 8 turns out
 to to be another interior page).
 
 In our case, page 8 is a leaf table page, so its cells contain the actual data for the table,
 rather than just pointers to other pages. Once again, the cells are in order based on their key
 so we can do another binary search to quickly find cell 5.
 
-
 And that's pretty much how databases work! There's a lot of extra implementation details to deal with, but
-conceptually that's pretty much it! 
+conceptually that's pretty much it!
 
 On to the implementation details.
 
@@ -231,7 +232,7 @@ to parse the first 100 bytes of the file and break it up into a list of separate
 manipulated easily. The format string I'm passing (`>16sH6B12i20x2i`) can be read like this:
 
 | code | meaning                                                        |
-|------|----------------------------------------------------------------|
+| ---- | -------------------------------------------------------------- |
 | >    | Use little endian                                              |
 | 16s  | An array of 16 bytes of raw data                               |
 | H    | A single unsigned short (2 byte) value                         |
@@ -242,10 +243,11 @@ manipulated easily. The format string I'm passing (`>16sH6B12i20x2i`) can be rea
 
 The only field of importance right now is the `pageSize` field, but I parsed everything out to make life
 a little simpler later. Pages are the highest level structure
-in a sqlite file, so knowing how big they are is pretty useful. We'll skip the rest 
+in a sqlite file, so knowing how big they are is pretty useful. We'll skip the rest
 of the fields for now, but some of them will be coming up a little later.
 
 ## The `sqlite_schema` table
+
 Now that we know the page size, we need to parse the special `sqlite_schema` table. This is a
 special table that gives us information about the other tables in the database. The first page
 of the database file is always the root of the b-tree for this table, so it's very easy to find.
@@ -254,7 +256,7 @@ Conveniently for us, the example database I set up has only 1 table and a few in
 `sqlite_schema` table fits in one page. That means that the root page (i.e. page 1) is also a leaf
 page, which means (for now) we can put off dealing with interior pages, and just implement leaf table pages.
 
-Each page has its own header, and parsing that is the first step to reading the page. I used an extremely 
+Each page has its own header, and parsing that is the first step to reading the page. I used an extremely
 similar pattern to what I did to parse the file level header:
 
 ```python {11}
@@ -296,14 +298,14 @@ that's not part of a cell:
 This special pointer is used when we're searching for a value that's greater than all the keys in the list.
 So in that example, if we were looking for a key of `1000`, we'd binary search all the way to the right end
 of the cells, and if we don't find anything \>= `1000` then we'd traverse follow that right pointer to get to
-the appropriate child page.  Since that last pointer doesn't fit in any of the cells, it's stored in the header 
-(line 13 in the above code snippet). This is only relevant for internal pages though, so we only set that `rightPtr` 
+the appropriate child page. Since that last pointer doesn't fit in any of the cells, it's stored in the header
+(line 13 in the above code snippet). This is only relevant for internal pages though, so we only set that `rightPtr`
 field on interior page types.
 
 In my example database, the page header for the `sqlite_schema` table looks like this:
 
 | Field                    | Value      |
-|--------------------------|------------|
+| ------------------------ | ---------- |
 | type_id                  | TABLE_LEAF |
 | first_free_block_offset  | 4088       |
 | num_cells_in_page        | 4          |
@@ -324,7 +326,7 @@ sqlite> SELECT COUNT(1) FROM sqlite_schema;
 ```
 
 > Incidentally, this explains why `SELECT COUNT(1) FROM some_big_table` queries are so slow! The database engine would need
-to walk the b-tree to find every leaf page, and add up the `num_cells_in_page` for every one to get the answer.
+> to walk the b-tree to find every leaf page, and add up the `num_cells_in_page` for every one to get the answer.
 
 Anyway, we now have everything we need to read the cells from the table! Here's how I implemented that:
 
@@ -359,12 +361,10 @@ This is pretty strait forward. First we read the page header to figure out how m
 to expect. Immediately after the header ends there's an array of offsets (relative to the
 beginning of the page) which tell us where to find the cells. We iterate over those offsets
 and parse each cell! Since this is a table leaf page, the cells hold the actual contents of
-the table. Each cell contains its key, and array of values, one value per column in the 
+the table. Each cell contains its key, and array of values, one value per column in the
 table!
 
-
 Here's what we get by dumping all the cell payloads in the sqlite_schema table:
-
 
 ```
 ['table', 'users', 'users', 2, 'CREATE TABLE users (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    username TEXT NOT NULL UNIQUE,\n    email TEXT NOT NULL UNIQUE,\n    password_hash TEXT NOT NULL,\n    created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n)']
@@ -374,6 +374,7 @@ Here's what we get by dumping all the cell payloads in the sqlite_schema table:
 ```
 
 This is identical (albeit not quite so nicely formatted) to the output of selecting the rows of the table:
+
 ```sql frame="terminal" showLineNumbers=false
 sqlite> SELECT * FROM sqlite_schema;
 
@@ -394,19 +395,20 @@ Paraphrasing [the docs](https://www.sqlite.org/schematab.html), the rows here ea
 - The type of object (table/index/trigger/etc)
 - The name of the object (in the case of a table, it's the name of the table)
 - The table that the object references
-	- For a table, this is just the table's name again
-	- For an index, this is the table that the index is on
+  - For a table, this is just the table's name again
+  - For an index, this is the table that the index is on
 - **The root page number for the object**
-- The sql used to create the object. This is empty for the implicit indexes that sqlite created as a result of 
-the `UNIQUE` constraints on the `username` & `email` columns
+- The sql used to create the object. This is empty for the implicit indexes that sqlite created as a result of
+  the `UNIQUE` constraints on the `username` & `email` columns
 
-{/* Notably, for some reason there isn't a column in this table to tell us what column(s) an object refers to.
+{/_ Notably, for some reason there isn't a column in this table to tell us what column(s) an object refers to.
 This turned out to be an issue later on when I tried to use indexes, since there isn't an easy way to figure
-out which index covers a specific column. The only way to do it is to parse the SQL, which seems a bit silly. */}
+out which index covers a specific column. The only way to do it is to parse the SQL, which seems a bit silly. _/}
 
 For now, all we need is the root page number of the `users` table: 2.
 
 ## Reading the `users` table
+
 Now that we know that the root of the `users` table is page `2`, we can repeat this process for that tree! Except
 there's a hitch. Since I populated this table with 1000 records (as opposed to the 4 records in the sqlite_schema
 table), this table doesn't fit on one page. So we've got slightly more work to do here to find the leaf page.
@@ -414,7 +416,6 @@ table), this table doesn't fit on one page. So we've got slightly more work to d
 Since we're about to implement several page types, this seems like a good time to do a little refactoring so that the
 code can stay organized. Specifically, I'm splitting things out into an abstract base class called `Page`, which will
 have different implementations for each type of page we'll encounter.
-
 
 ```python ins={1-25,37} del={38-41}
 @dataclass
@@ -442,7 +443,7 @@ class Page(ABC):
                 return TableInteriorPage(file)
             case _:
                 raise ValueError(f"Unsupported page type: {page_type}")
-		
+
 		@abstractmethod
     def get_record(self, key: any) -> Optional["Record"]:
         pass
@@ -487,7 +488,7 @@ class TableLeafPage(Page):
         for ptr in cell_ptrs:
             file.seek(self.offset + ptr)
             self.cells.append(TableLeafCell(file, db.header.text_encoding))
-		
+
 		def get_record(self, row_id: int) -> Optional[Record]:
 			# Use the stdlib bisect_left function to find the first cell with a key that's >= row_id
 			idx = bisect_left(self.cells, row_id, key=lambda cell: cell.row_id)
@@ -562,7 +563,6 @@ class Page(ABC):
 With this structure in place, it's easy to extend the pattern to handle other page types. For now,
 the only additional one we need is a `TableInteriorPage`:
 
-
 ```python {12, 20}
 @dataclass
 class TableInteriorPage(Page):
@@ -576,7 +576,7 @@ class TableInteriorPage(Page):
         for ptr in cell_ptrs:
             file.seek(self.offset + ptr)
             self.cells.append(TableInteriorCell(file))
-		
+
 		def get_record(self, row_id) -> Optional[Record]:
 			idx = bisect_left(self.cells, row_id, key=lambda cell: cell.key)
 			if idx < len(self.cells) and self.cells[idx].key >= row_id:
@@ -626,6 +626,7 @@ value of that column, rather than doing another level of indirection with an ind
 puts an entry in the database records for that column, it just sets it to null (which is what we're seeing).
 
 ## Using Indexes
+
 But what if we didn't use an `INTEGER PRIMARY KEY AUTOINCREMENT`? Well lets work through an example like that, extending the code to handle
 this situation.
 
@@ -635,11 +636,13 @@ table, and the interior b-tree pages store pointers to child pages until we reac
 between the representation of a table and that of an index:
 
 1. Instead of the keys of the cells being `rowid`'s, the key is a concatenation of the value in the column that's indexed, followed by the rowid
+
 - So our user `450`, the index for the `email` row has a key of `user_450@example.com450`
+
 2. Instead of the values in the cells in the leaves holding the data for the table, the value is the rowid of a record
 
-
 So the process for looking up a record based on an indexed column goes like this:
+
 1. Use the sqlite_schema table to find the root page for an index on the column we need
 2. Use the internal pages to locate the leaf page containing a cell for the record we want
 3. Read the rowid for the record out of that leaf cell
@@ -648,6 +651,7 @@ So the process for looking up a record based on an indexed column goes like this
 Since we already have most of the abstractions necessary to do this, it's fairly strait forward. I'll need to add additional classes
 to represent the index internal/leaf pages, and additional classes to represent how cells are structured in index internal/leaf pages.
 Here's what that looks like:
+
 ```python {61}
 class IndexInteriorCell(Cell):
 	child_page_ptr: int
@@ -718,15 +722,14 @@ def get_user_info_by_id(db, row_id) -> Record | None:
 	return record
 ```
 
-
-This should all look pretty familiar from the first part, since it's all nearly the same. The biggest 
+This should all look pretty familiar from the first part, since it's all nearly the same. The biggest
 difference is line 61. When we get all the way down to a leaf page and find the correct record,
 instead of just returning the payload of that cell (after some parsing) we pass the payload of that cell
 into `get_user_info_by_id`, using the value of the leaf index cell as the id for looking up the real
-database record. 
-
+database record.
 
 ## Parsing records
+
 I glossed over one important detail above, which is the actual format that the data is stored inside
 the payload of the cells.
 
@@ -735,7 +738,6 @@ a varint (variable length int). This format supports storing ints that are betwe
 long. They use the first bit of each byte to signify whether there are more bytes to come, or if
 you're done reading the number. If you reach the 9th byte, then you automatically know that this is the
 last byte, so the full byte is used. Here's a (probably not very efficient) implementation of that:
-
 
 ```python
 def read_varint(file):
@@ -758,7 +760,7 @@ structured as a record, with its own header. The header for a cell defines the d
 and then the data for the columns follows immediately after that. The reason they save a seperate header for each cell
 instead of just having one per table is that if a new column is added to the table after records already exist, new cells
 might get created with columns that don't exist in the previous cells. Or put differently, rows in a sqlite table don't
-*necessarily* have the same number of columns. 
+_necessarily_ have the same number of columns.
 
 The header is a series of varints. The first varint tells us how long the header is, and the rest of the varints are basically
 an enum that corresponds to the data type for the column (see [the docs](https://www.sqlite.org/fileformat.html#record_format) for the specifics). Here's what the process of parsing a record looks like:
@@ -858,6 +860,5 @@ class IndexLeafCell(Cell):
         self.payload_size = read_varint(file)
         self.record = Record(file, encoding)
 ```
-
 
 And that's it! If you got this far, thanks for reading!

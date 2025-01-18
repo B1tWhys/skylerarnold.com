@@ -22,6 +22,7 @@
   - [ ] Come up with list of projects
 
 # Blogpost ideas
+
 - Learning AT protocol
 - Building home pi lab (and then training AI on it)
 - Add a blog post using certstream data to live-stream in GCP buckets (which do [seem to get public certs](https://stackoverflow.com/a/20479113))
