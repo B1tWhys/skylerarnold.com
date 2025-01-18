@@ -1,0 +1,9 @@
+---
+const { Content = "article" } = Astro.props;
+---
+
+<Content
+  class="prose max-w-3xl px-3 pt-1 rounded-md border-2 border-base-200 dark:border dark:border-base-content shadow-md"
+>
+  <slot />
+</Content>

@@ -6,13 +6,38 @@ import Layout from "../components/GlobalLayout.astro";
   <main class="h-[80%] flex-1 flex items-center justify-center">
     <div class="prose text-4xl p-2 text-center">
       <h1 class="font-sans font-extrabold">
-        Hi, I'm <span class="text-sky-500 dark:text-sky-300">Skyler</span>
+        Hi, I'm <span id="skyler">Skyler</span>
       </h1>
       <p class="translate-y-[-1.5em] font-semibold">Nice to meet you!</p>
       <p class="text-lg">
-        This site is currently under development, please check back later for
-        actual information!
+        This site is currently quite new (I just started it), please check back
+        later for more content!
       </p>
     </div>
   </main>
 </Layout>
+
+<style>
+  @media (prefers-color-scheme: dark) {
+    #skyler {
+      background: linear-gradient(
+        48deg,
+        rgba(14, 165, 233, 1) 0%,
+        rgba(0, 212, 255, 1) 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+  @media (prefers-color-scheme: light) {
+    #skyler {
+      background: linear-gradient(
+        48deg,
+        rgb(14, 110, 233) 0%,
+        rgb(81, 173, 255) 70%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+</style>

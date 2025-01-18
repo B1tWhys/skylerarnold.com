@@ -1,6 +1,7 @@
 ---
 import { render } from "astro:content";
 import GlobalLayout from "./GlobalLayout.astro";
+import MainContentWrapper from "./MainContentWrapper.astro";
 
 const { post } = Astro.props;
 const { Content } = await render(post);
@@ -12,9 +13,7 @@ const { Content } = await render(post);
   linkKatex
 >
   <div class="flex w-full items-center justify-center">
-    <article
-      class="prose max-w-3xl px-3 pt-1 rounded-md border-2 border-base-200 dark:border dark:border-base-content shadow-md"
-    >
+    <MainContentWrapper>
       <div class="text-center">
         <h1 id="title" class="mb-0">{post.data.title}</h1>
         <div class="font-thin text-sm">
@@ -22,7 +21,7 @@ const { Content } = await render(post);
         </div>
       </div>
       <Content />
-    </article>
+    </MainContentWrapper>
   </div>
 </GlobalLayout>
 

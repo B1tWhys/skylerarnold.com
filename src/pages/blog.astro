@@ -2,6 +2,7 @@
 import { getCollection } from "astro:content";
 import Layout from "../components/GlobalLayout.astro";
 import { Icon } from "astro-icon/components";
+import MainContentWrapper from "../components/MainContentWrapper.astro";
 
 let posts = await getCollection("blog");
 posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
@@ -9,8 +10,8 @@ posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 <Layout>
   <div class="w-full flex align-middle items-center justify-center">
-    <main class="prose pt-2 px-4 w-full md:w-2/3 lg:w-1/2">
-      <div class="list-none p-0">
+    <MainContentWrapper Content="main">
+      <div class="list-none p-2 pb-4">
         <a href="/rss.xml" title="RSS Feed" class="absolute right-2 top-2">
           <Icon name="tabler:rss" class="w-6" />
         </a>
@@ -40,11 +41,11 @@ posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
                   </span>
                 </a>
               </section>
-              <div class="divider" />
+              <div class="divider last:hidden" />
             </>
           ))
         }
       </div>
-    </main>
+    </MainContentWrapper>
   </div>
 </Layout>
