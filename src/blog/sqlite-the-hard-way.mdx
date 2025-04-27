@@ -401,10 +401,6 @@ Paraphrasing [the docs](https://www.sqlite.org/schematab.html), the rows here ea
 - The sql used to create the object. This is empty for the implicit indexes that sqlite created as a result of
   the `UNIQUE` constraints on the `username` & `email` columns
 
-{/_ Notably, for some reason there isn't a column in this table to tell us what column(s) an object refers to.
-This turned out to be an issue later on when I tried to use indexes, since there isn't an easy way to figure
-out which index covers a specific column. The only way to do it is to parse the SQL, which seems a bit silly. _/}
-
 For now, all we need is the root page number of the `users` table: 2.
 
 ## Reading the `users` table
